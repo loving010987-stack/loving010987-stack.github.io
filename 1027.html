@@ -243,7 +243,7 @@ canvas{display:block;}
         <button class="tbtn" data-m="flipV">↕️ 위아래 뒤집기</button>
         <button class="tbtn" data-m="rot90">🔄 90° 돌리기</button>
         <button class="tbtn" data-m="rot180">🔁 180° 돌리기</button>
-        <button class="tbtn" data-m="random">🎲 섞기</button>
+        <button class="tbtn" data-m="flipHV">↔️↕️ 두 번 뒤집기</button>
       </div>
       <div id="modeDesc">➡️ 같은 모양을 그대로 반복해요 (밀기)</div>
       <button class="make-btn" id="makeBtn">✨ 포장지 만들기!</button>
@@ -264,9 +264,9 @@ const DESC={
   translate:'➡️ 같은 모양을 그대로 반복해요 (밀기)',
   flipH:'↔️ 한 칸씩 좌우로 뒤집어서 반복해요',
   flipV:'↕️ 한 칸씩 위아래로 뒤집어서 반복해요',
-  rot90:'🔄 90°씩 돌려서 반복해요 (4방향)',
+  rot90:'🔄 네 칸이 시계 방향으로 90°씩 돌아가요',
   rot180:'🔁 180°씩 돌려서 반복해요 (2방향)',
-  random:'🎲 여러 방법을 섞어서 반복해요'
+  flipHV:'↔️↕️ 좌우로도, 위아래로도 뒤집어서 반복해요'
 };
 
 let curColor=COLORS[9], eraser=false, drawing=false, lx, ly, mode='translate';
@@ -404,18 +404,19 @@ function getCell(row, col, srcCanvas, m) {
     return makeTile(srcCanvas, 0, false, row % 2 !== 0);
   }
   else if(m === 'rot90') {
-    // 90°돌리기: (row+col)%4 → 0°, 90°, 180°, 270°
-    const angles = [0, 90, 180, 270];
-    return makeTile(srcCanvas, angles[(row + col) % 4], false, false);
+    // 90°돌리기: 네 칸이 한 점을 중심으로 시계 방향으로 한 바퀴 (바람개비)
+    // 왼쪽 위 0° → 오른쪽 위 90° → 오른쪽 아래 180° → 왼쪽 아래 270°
+    const angles = [[0, 90], [270, 180]];
+    return makeTile(srcCanvas, angles[row % 2][col % 2], false, false);
   }
   else if(m === 'rot180') {
     // 180°돌리기: (row+col)%2 → 0°, 180°
     return makeTile(srcCanvas, (row + col) % 2 === 0 ? 0 : 180, false, false);
   }
-  else if(m === 'random') {
-    // 섞기: 랜덤
-    const modes = ['translate','flipH','flipV','rot90','rot180'];
-    return getCell(row, col, srcCanvas, modes[Math.floor(Math.random()*modes.length)]);
+  else if(m === 'flipHV') {
+    // 두 번 뒤집기: 홀수열은 좌우, 홀수행은 위아래로 뒤집음
+    // → 대각선 칸은 두 번 뒤집혀서 180° 돌린 모양과 같아짐
+    return makeTile(srcCanvas, 0, col % 2 !== 0, row % 2 !== 0);
   }
   return makeTile(srcCanvas, 0, false, false);
 }
@@ -502,9 +503,9 @@ const MOVES = [
   ['translate','➡️ 밀기','그대로 반복'],
   ['flipH','↔️ 좌우 뒤집기','한 칸씩 거울처럼'],
   ['flipV','↕️ 위아래 뒤집기','한 줄씩 거꾸로'],
-  ['rot90','🔄 90° 돌리기','네 방향으로'],
+  ['rot90','🔄 90° 돌리기','시계 방향으로 90°씩'],
   ['rot180','🔁 180° 돌리기','두 방향으로'],
-  ['random','🎲 섞기','여러 방법을 섞어서']
+  ['flipHV','↔️↕️ 두 번 뒤집기','좌우로도, 위아래로도']
 ];
 
 // 6가지 움직임 미리보기
@@ -517,7 +518,7 @@ MOVES.forEach(([m, name, sub]) => {
   box.appendChild(cv);
   box.insertAdjacentHTML('beforeend', `<b>${name}</b><span>${sub}</span>`);
   movesEl.appendChild(box);
-  paintPattern(cv, m, 40);
+  paintPattern(cv, m, 30);
 });
 
 // 위쪽 큰 미리보기: 움직임을 차례로 바꿔 보여 줌
